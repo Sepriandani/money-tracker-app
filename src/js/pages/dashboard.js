@@ -1,15 +1,23 @@
+import CheckUserAuth from './auth/check-user-auth';
+import Transactions from '../network/transactions';
+
 const Dashboard = {
   async init() {
+    CheckUserAuth.checkLoginState();
     await this._initialData();
     this._initialListener();
   },
 
   async _initialData() {
-    const fetchRecords = await fetch('/data/DATA.json');
-    const responseRecords = await fetchRecords.json();
-    this._userTransactionsHistory = responseRecords.results.transactionsHistory;
-    this._populateTransactionsRecordToTable(this._userTransactionsHistory);
-    this._populateTransactionsDataToCard(this._userTransactionsHistory);
+    try {
+      const response = await Transactions.getAll();
+      const responseRecords = response.data.results;
+      this._userTransactionsHistory = responseRecords.transactionsHistory;
+      this._populateTransactionsRecordToTable(this._userTransactionsHistory);
+      this._populateTransactionsDataToCard(this._userTransactionsHistory);
+    } catch (error) {
+      console.error(error);
+    }
   },
 
   _initialListener() {
@@ -22,6 +30,21 @@ const Dashboard = {
         return item.id == button.dataset.recordId;
       });
       this._populateDetailTransactionToModal(dataRecord);
+    });
+    const deleteRecordBtns = document.querySelectorAll('#recordsTable tbody a[id^="delete"]');
+    deleteRecordBtns.forEach((item) => {
+      item.addEventListener('click', async (event) => {
+        event.preventDefault();
+        const recordId = event.target.dataset.recordId;
+        try {
+          const response = await Transactions.destroy(recordId);
+          window.alert('Transaction has been destroyed');
+          window.location.href = '/';
+        } catch (error) {
+          console.error(error);
+        }
+        this._initialData();
+      });
     });
   },
 
@@ -121,7 +144,10 @@ const Dashboard = {
               }">
                 <i class="bi bi-pen-fill me-1"></i>Edit
               </a>
-              <a class="btn btn-sm btn-danger" href="#">
+              <a class="btn btn-sm btn-danger" href="#"
+                id="delete-${transactionRecord.id}"
+                data-record-id="${transactionRecord.id}"
+              >
                 <i class="bi bi-trash3-fill me-1"></i>Delete
               </a>
             </div>
