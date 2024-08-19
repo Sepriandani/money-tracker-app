@@ -31,14 +31,15 @@ const Edit = {
 
   async _initialData() {
     const transactionId = this._getTransactionId();
+ 
     if (!transactionId) {
-      alert('Data dengan id yang dicari tidak ditemukan');
+      window.alert('Data dengan id yang dicari tidak ditemukan');
       return;
     }
+ 
     try {
       const response = await Transactions.getById(transactionId);
-      const responseRecords = response.data.results;
-      this._populateTransactionToForm(responseRecords);
+      this._populateTransactionToForm(response);
     } catch (error) {
       console.error(error);
     }
@@ -67,10 +68,14 @@ const Edit = {
       console.log(formData);
  
       try {
+        if (!formData.evidence) {
+          delete formData.evidence;
+        }
         const response = await Transactions.update({
-          id: this._getTransactionId(),
           ...formData,
+          id: this._getTransactionId(),
         });
+ 
         window.alert(`Transaction with id ${this._getTransactionId()} has been edited`);
         this._goToDashboardPage();
       } catch (error) {
